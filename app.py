@@ -1,5 +1,6 @@
 import faicons as fa
 import plotly.express as px
+import pandas as pd
 
 # Cargar datos y computar valores estáticos
 from shared import app_dir, tips
@@ -29,6 +30,17 @@ with ui.sidebar(open="desktop"):
         selected=["Lunch", "Dinner"], # Opciones seleccionadas inicialmente
         inline=True,                 # Mostrar horizontalmente
     )
+
+    #Filtro para los dias de la semana
+    ui.input_selectize(
+        "days",                      # ID del input
+        "Dias de la semana",              # Etiqueta para el usuario
+        ["Thur", "Fri", "Sat", "Sun"], 
+        multiple=True,        # Opciones disponibles
+        selected=["Thur"], # Opciones seleccionadas inicialmente
+                )
+#Fin de filtro para los dias de la semana
+
     ui.input_action_button("reset", "Reset filter") # Botón para reiniciar filtros
 
     # Definir iconos para la interfaz
@@ -37,6 +49,7 @@ ICONS = {
     "wallet": fa.icon_svg("wallet"),
     "currency-euro": fa.icon_svg("euro-sign"),
     "ellipsis": fa.icon_svg("ellipsis"),
+    "users": fa.icon_svg("users")
 }
 
 # Crear fila de cajas de valores
@@ -71,6 +84,17 @@ with ui.layout_columns(fill=False):
                 bill = d.total_bill.mean()  # Calcular factura promedio
                 f"{bill:.2f}€"              # Formatear como moneda
 
+    # Cuarta caja de valor: Tamaño promedio
+    with ui.value_box(showcase=ICONS["users"]):
+        "Average size"
+
+        @render.express
+        def average_size():
+            d = tips_data()
+            if d.shape[0] > 0:
+                tamaño = d["size"].mean()  # Acceder a la columna "size"
+                f"{tamaño:.1f} Personas"
+
 # Crear diseño principal con tres tarjetas
 with ui.layout_columns(col_widths=[6, 6, 12]):
     # Primera tarjeta: Tabla de datos
@@ -95,18 +119,20 @@ with ui.layout_columns(col_widths=[6, 6, 12]):
                     ["none", "sex", "smoker", "day", "time"],
                     inline=True,
                 )
-
+                ui.input_checkbox("checkbox", "Ver tamaño del grupo en los puntos", value=False)  
         # Renderizar el gráfico de dispersión
         @render_plotly
         def scatterplot():
             color = input.scatter_color()
+            check_activo = input.checkbox()
             return px.scatter(
                 tips_data(),
                 x="total_bill",
                 y="tip",
                 color=None if color == "none" else color,
                 trendline="lowess",  # Añadir línea de tendencia
-            )
+                size="size" if check_activo  else None,
+                )
         
     # Tercera tarjeta: Gráfico de densidad (ridgeplot)
     with ui.card(full_screen=True):
@@ -155,6 +181,28 @@ with ui.layout_columns(col_widths=[6, 6, 12]):
 
             return plt
 
+with ui.layout_columns():
+    with ui.card(full_screen=True, height="350px"):
+        ui.card_header("Gráfico Simple de Propinas por Día")
+        
+        @render_plotly
+        def simple_bar_chart():
+            # Calculamos la suma de propinas por día
+            tips_by_day = tips_data().groupby('day')['tip'].sum().reset_index()
+            
+            # Ordenar los días correctamente
+            day_order = ["Thur", "Fri", "Sat", "Sun"]
+            tips_by_day["day"] = pd.Categorical(tips_by_day["day"], categories=day_order, ordered=True)
+            tips_by_day = tips_by_day.sort_values("day")
+            
+            # Crear el gráfico simple
+            fig = px.bar(
+                tips_by_day, 
+                x='day', 
+                y='tip',
+            )
+            
+            return fig
 # Incluir estilos CSS personalizados
 ui.include_css(app_dir / "styles.css")
 
@@ -168,11 +216,15 @@ def tips_data():
     bill = input.total_bill()  # Obtener rango de facturas seleccionado
     idx1 = tips.total_bill.between(bill[0], bill[1])  # Filtrar por factura
     idx2 = tips.time.isin(input.time())  # Filtrar por momento
-    return tips[idx1 & idx2]  # Devolver datos filtrados
+    idx3 = tips.day.isin(input.days())  # Filtrar por días de la semana
+    return tips[idx1 & idx2 & idx3]  # Devolver datos filtrados
 
 # Efecto reactivo para restablecer filtros cuando se hace clic en el botón
 @reactive.effect
 @reactive.event(input.reset)  # Activar cuando se haga clic en "reset"
 def _():
-    ui.update_slider("total_bill", value=bill_rng)  # Restablecer control deslizante
-    ui.update_checkbox_group("time", selected=["Lunch", "Dinner"])  # Restablecer casillas
+    ui.update_slider("total_bill", value=bill_rng)
+    ui.update_checkbox_group("time", selected=["Lunch", "Dinner"])
+    ui.update_selectize("days", selected=["Thur"])
+
+    

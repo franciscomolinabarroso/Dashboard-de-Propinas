@@ -60,7 +60,7 @@ with ui.layout_columns(fill=False):
 
         @render.express
         def total_tippers():
-            tips_data().shape[0]  # Contar filas en los datos filtrados
+            tips_data().shape[0]  # Contar filas en los datos filtrados #Es la funcion reactiva si algo cambia en ella automaticamente se actualiza todo lo demas
 
     # Segunda caja de valor: Propina promedio
     with ui.value_box(showcase=ICONS["wallet"]):
@@ -68,7 +68,7 @@ with ui.layout_columns(fill=False):
 
         @render.express
         def average_tip():
-            d = tips_data()
+            d = tips_data() #Es la funcion reactiva si algo cambia en ella automaticamente se actualiza todo lo demas
             if d.shape[0] > 0:
                 perc = d.tip / d.total_bill  # Calcular porcentaje de propina
                 f"{perc.mean():.1%}"         # Formatear como porcentaje
@@ -79,7 +79,7 @@ with ui.layout_columns(fill=False):
 
         @render.express
         def average_bill():
-            d = tips_data()
+            d = tips_data() #Es la funcion reactiva si algo cambia en ella automaticamente se actualiza todo lo demas
             if d.shape[0] > 0:
                 bill = d.total_bill.mean()  # Calcular factura promedio
                 f"{bill:.2f}€"              # Formatear como moneda
@@ -90,7 +90,7 @@ with ui.layout_columns(fill=False):
 
         @render.express
         def average_size():
-            d = tips_data()
+            d = tips_data() #Es la funcion reactiva si algo cambia en ella automaticamente se actualiza todo lo demas
             if d.shape[0] > 0:
                 tamaño = d["size"].mean()  # Acceder a la columna "size"
                 f"{tamaño:.1f} Personas"
@@ -103,7 +103,7 @@ with ui.layout_columns(col_widths=[6, 6, 12]):
 
         @render.data_frame
         def table():
-            return render.DataGrid(tips_data())
+            return render.DataGrid(tips_data()) #Es la funcion reactiva si algo cambia en ella automaticamente se actualiza todo lo demas
         
 
     # Segunda tarjeta: Gráfico de dispersión
@@ -126,7 +126,7 @@ with ui.layout_columns(col_widths=[6, 6, 12]):
             color = input.scatter_color()
             check_activo = input.checkbox()
             return px.scatter(
-                tips_data(),
+                tips_data(), #Es la funcion reactiva si algo cambia en ella automaticamente se actualiza todo lo demas
                 x="total_bill",
                 y="tip",
                 color=None if color == "none" else color,
@@ -155,7 +155,7 @@ with ui.layout_columns(col_widths=[6, 6, 12]):
             from ridgeplot import ridgeplot  # Importamos la función ridgeplot
 
             # Preparar datos
-            dat = tips_data()
+            dat = tips_data() #Es la funcion reactiva si algo cambia en ella automaticamente se actualiza todo lo demas
             dat["percent"] = dat.tip / dat.total_bill  # Calcular porcentaje de propina
             yvar = input.tip_perc_y()  # Variable para dividir
             uvals = dat[yvar].unique()  # Valores únicos de esa variable
@@ -188,7 +188,7 @@ with ui.layout_columns():
         @render_plotly
         def simple_bar_chart():
             # Calculamos la suma de propinas por día
-            tips_by_day = tips_data().groupby('day')['tip'].sum().reset_index()
+            tips_by_day = tips_data().groupby('day')['tip'].sum().reset_index() #Es la funcion reactiva si algo cambia en ella automaticamente se actualiza todo lo demas
             
             # Ordenar los días correctamente
             day_order = ["Thur", "Fri", "Sat", "Sun"]
@@ -212,7 +212,7 @@ ui.include_css(app_dir / "styles.css")
 
 # Función reactiva para filtrar datos según entradas del usuario
 @reactive.calc
-def tips_data():
+def tips_data(): #Es la funcion reactiva si algo cambia en ella automaticamente se actualiza todo lo demas
     bill = input.total_bill()  # Obtener rango de facturas seleccionado
     idx1 = tips.total_bill.between(bill[0], bill[1])  # Filtrar por factura
     idx2 = tips.time.isin(input.time())  # Filtrar por momento
